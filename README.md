@@ -1,5 +1,10 @@
 # React Redux Universal Hot Example
 ---
+[![build status](https://img.shields.io/travis/erikras/react-redux-universal-hot-example/master.svg?style=flat-square)](https://travis-ci.org/erikras/react-redux-universal-hot-example)
+[![react-redux-example channel on slack](https://img.shields.io/badge/slack-react--redux--example%40reactiflux-blue.svg)](http://www.reactiflux.com)
+[![Demo on Heroku](https://img.shields.io/badge/demo-heroku-lightgrey.png)](https://react-redux.herokuapp.com)
+[![Dependency Status](https://david-dm.org/erikras/react-redux-universal-hot-example.svg)](https://david-dm.org/erikras/react-redux-universal-hot-example)
+[![devDependency Status](https://david-dm.org/erikras/react-redux-universal-hot-example/dev-status.svg)](https://david-dm.org/erikras/react-redux-universal-hot-example#info=devDependencies)
 
 This is a starter boiler plate app I've put together using the following technologies:
 
@@ -12,8 +17,10 @@ This is a starter boiler plate app I've put together using the following technol
 * [Webpack](http://webpack.github.io) for bundling
 * [Webpack Dev Server](http://webpack.github.io/docs/webpack-dev-server.html)
 * [React Hot Loader](https://github.com/gaearon/react-hot-loader)
-* [Redux](https://github.com/gaearon/redux)'s futuristic [Flux](https://facebook.github.io/react/blog/2014/05/06/flux
-.html) implementation
+* [Redux](https://github.com/gaearon/redux)'s futuristic [Flux](https://facebook.github.io/react/blog/2014/05/06/flux.html) implementation
+* [Redux Dev Tools](https://github.com/gaearon/redux-devtools) for next generation DX (developer experience). Watch [Dan Abramov's talk](https://www.youtube.com/watch?v=xsSnOQynTHs).
+* [redux-form](https://github.com/erikras/redux-form) to manage form state in Redux
+* [lru-memoize](https://github.com/erikras/lru-memoize) to speed up form validation
 * [style-loader](https://github.com/webpack/style-loader) and [sass-loader](https://github.com/jtangelder/sass-loader) to allow import of stylesheets
 
 I cobbled this together from a wide variety of similar "starter" repositories. As I post this in June 2015, all of these libraries are right at the bleeding edge of web development. They may fall out of fashion as quickly as they have come into it, but I personally believe that this stack is the future of web development and will survive for several years. I'm building my new projects like this, and I recommend that you do, too.
@@ -37,6 +44,10 @@ npm run build
 npm run start
 ```
 
+## Demo
+
+A demonstration of this app can be see [running on heroku](https://react-redux.herokuapp.com), which is a deployment of the [heroku branch](https://github.com/erikras/react-redux-universal-hot-example/tree/heroku).
+
 ## Explanation
 
 What initally gets run is `babel.server.js`, which does little more than enable ES6 and ES7 awesomeness in the server-side node code. It then initiates `server.js`. In `server.js` we proxy any requests to `/api/*` to the [API server](#api-server), running at `localhost:3030`. All the data fetching calls from the client go to `/api/*`. Aside from serving the favicon and static content from `/static`, the only thing `server.js` does is initiate delegate rendering to `react-router`. At the bottom of `server.js`, we listen to port `3000` and initiate the API server.
@@ -49,7 +60,7 @@ Then we perform [server-side data fetching](#server-side-data-fetching), wait fo
 
 The last interesting bit of the main routing section of `server.js` is that we swap in the hashed script and css from the `webpack-stats.json` that the Webpack Dev Server – or the Webpack build process on production – has spit out on its last run.
 
-We also spit out the `redux` state into a global `window.__data__` variable in the webpage to be loaded by the client-side `redux` code.
+We also spit out the `redux` state into a global `window.__data` variable in the webpage to be loaded by the client-side `redux` code.
 
 #### Server-side Data Fetching
 
@@ -74,10 +85,48 @@ This is where the meat of your server-side application goes. It doesn't have to 
 
 To understand how the data and action bindings get into the components – there's only one, `InfoBar`, in this example – I'm going to refer to you to the [Redux](https://github.com/gaearon/redux) library. The only innovation I've made is to package the component and its wrapper in the same js file. This is to encapsulate the fact that the component is bound to the `redux` actions and state. The component using `InfoBar` needn't know or care if `InfoBar` uses the `redux` data or not.
 
-## Todo
+#### Images
 
-* Ideally we [wouldn't use global css styles at all](https://medium.com/seek-ui-engineering/the-end-of-global-css-90d2a4a06284). It would be nice if we could get [css-loader](https://github.com/webpack/css-loader)'s "module" local styles, but at the time of this writing, I can't get [that](https://github.com/css-modules/webpack-demo) to work on the server side. If you can figure out how to do that, please let me know and submit a pull request!
-* If someone would like to figure out how to get this example to work in Windows (apparently [it doesn't](https://github.com/erikras/react-redux-universal-hot-example/issues/6)) and write up a short guide, I'd be happy to share it in this document.
+Now it's possible to render the image both on client and server. Please refer to issue [#39](https://github.com/erikras/react-redux-universal-hot-example/issues/39) for more detail discussion, the usage would be like below (super easy):
+
+```javascript
+let logoImage = '';
+if(__CLIENT__) {
+  logoImage = require('./logo.png');
+} else {
+  logoImage = requireServerImage('./logo.png');
+}
+```
+
+#### Styles
+
+This project uses [local styles](https://medium.com/seek-ui-engineering/the-end-of-global-css-90d2a4a06284) using [css-loader](https://github.com/webpack/css-loader). The way it works is that you import your stylesheet at the top of the class with your React Component, and then you use the classnames returned from that import. Like so:
+
+```javascript
+const styles = __CLIENT__ ?
+  require('./App.scss') :
+  requireServerCss(require.resolve('./App.scss'));
+```
+
+Then you set the `className` of your element to match one of the CSS classes in your SCSS file, and you're good to go!
+
+```jsx
+<div className={styles.mySection}> ... </div>
+```
+
+## The Future
+
+* [Inline Styles](docs/InlineStyles.md) - CSS is dead.
+
+## FAQ
+
+#### Help! It doesn't work on Windows! What do I do?
+
+Fear not. [chtefi](https://github.com/chtefi) has figured out [what needs to be changed](https://github.com/erikras/react-redux-universal-hot-example/pull/21/files) to make it work on Windows 8.
+
+#### How do I disable the dev tools?
+
+They will only show in development, but if you want to disable them even there, set `__DEVTOOLS__` to `false` in `/webpack/dev.config.js`.
 
 ---
 Thanks for checking this out.

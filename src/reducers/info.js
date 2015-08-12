@@ -33,3 +33,7 @@ export default function info(state = initialState, action = {}) {
       return state;
   }
 }
+
+export function isLoaded(globalState) {
+  return globalState.info && globalState.info.loaded;
+}

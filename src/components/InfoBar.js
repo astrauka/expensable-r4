@@ -1,43 +1,33 @@
-/*global __CLIENT__*/
-import React, {PropTypes} from 'react';
+import React, {Component, PropTypes} from 'react';
 import {bindActionCreators} from 'redux';
-import {connect} from 'redux/react';
-import * as infoActions from '../actions/infoActions';
-if (__CLIENT__) {
-  require('./InfoBar.scss');
-}
+import {connect} from 'react-redux';
+import {load} from '../actions/infoActions';
+import {requireServerCss} from '../util';
 
-class InfoBar {
+const styles = __CLIENT__ ? require('./InfoBar.scss') : requireServerCss(require.resolve('./InfoBar.scss'));
+
+@connect(
+    state => ({info: state.info.data}),
+    dispatch => bindActionCreators({load}, dispatch))
+export default class InfoBar extends Component {
   static propTypes = {
     info: PropTypes.object,
     load: PropTypes.func.isRequired
   }
 
   render() {
-    const {info, load} = this.props;
+    const {info, load} = this.props; // eslint-disable-line no-shadow
     return (
-      <div className="info-bar well">
-        This is an info bar
-        {' '}
-        <strong>{info ? info.message : 'no info!'}</strong>
-        <span className="time">{info && new Date(info.time).toString()}</span>
-        <button className="btn btn-primary" onClick={load}>Reload from server</button>
+      <div className={styles.infoBar + ' well'}>
+        <div className="container">
+          This is an info bar
+          {' '}
+          <strong>{info ? info.message : 'no info!'}</strong>
+          <span className={styles.time}>{info && new Date(info.time).toString()}</span>
+          <button className="btn btn-primary" onClick={load}>Reload from server</button>
+        </div>
       </div>
     );
   }
 }
 
-@connect(state => ({
-  info: state.info.data
-}))
-export default class InfoBarContainer {
-  static propTypes = {
-    info: PropTypes.object,
-    dispatch: PropTypes.func.isRequired
-  }
-
-  render() {
-    const { info, dispatch } = this.props;
-    return <InfoBar info={info} {...bindActionCreators(infoActions, dispatch)}/>;
-  }
-}

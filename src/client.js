@@ -1,19 +1,36 @@
+/* global __DEVTOOLS__ */
+import 'babel/polyfill';
 import React from 'react';
-import Router from 'react-router';
 import BrowserHistory from 'react-router/lib/BrowserHistory';
-import routes from './views/routes';
-import createRedux from './redux/create';
-import { Provider } from 'redux/react';
+import Location from 'react-router/lib/Location';
+import createStore from './redux/create';
 import ApiClient from './ApiClient';
+import universalRouter from './universalRouter';
 const history = new BrowserHistory();
 const client = new ApiClient();
 
 const dest = document.getElementById('content');
-const redux = createRedux(client, window.__data);
-const element = (<Provider redux={redux}>
-  {() => <Router history={history} children={routes}/> }
-</Provider>);
-React.render(element, dest);
+const store = createStore(client, window.__data);
+const location = new Location(document.location.pathname, document.location.search);
+universalRouter(location, history, store)
+  .then(({component}) => {
+    if (__DEVTOOLS__) {
+      const { DevTools, DebugPanel, LogMonitor } = require('redux-devtools/lib/react');
+      console.info('You will see a "Warning: React attempted to reuse markup in a container but the checksum was' +
+        ' invalid." message. That\'s because the redux-devtools are enabled.');
+      React.render(<div>
+        {component}
+        <DebugPanel top right bottom key="debugPanel">
+          <DevTools store={store} monitor={LogMonitor}/>
+        </DebugPanel>
+      </div>, dest);
+    } else {
+      React.render(component, dest);
+    }
+  }, (error) => {
+    console.error(error);
+  });
+
 
 if (process.env.NODE_ENV !== 'production') {
   window.React = React; // enable debugger

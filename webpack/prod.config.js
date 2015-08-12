@@ -3,10 +3,12 @@
 var path = require('path');
 var webpack = require('webpack');
 var writeStats = require('./utils/writeStats');
+var CleanPlugin = require('clean-webpack-plugin');
 var ExtractTextPlugin = require('extract-text-webpack-plugin');
 var strip = require('strip-loader');
 
-var assetsPath = path.join(__dirname, '../static/dist');
+var relativeAssetsPath = '../static/dist';
+var assetsPath = path.join(__dirname, relativeAssetsPath);
 
 module.exports = {
   devtool: 'source-map',
@@ -22,9 +24,10 @@ module.exports = {
   },
   module: {
     loaders: [
-      { test: /\.(jpe?g|png|gif|svg)$/, loader: 'file' },
+      { test: /\.(jpe?g|png|gif|svg)$/, loader: 'url', query: {limit: 10240} },
       { test: /\.js$/, exclude: /node_modules/, loaders: [strip.loader('debug'), 'babel?stage=0&optional=runtime&plugins=typecheck']},
-      { test: /\.scss$/, loader: ExtractTextPlugin.extract('style', 'css!autoprefixer?browsers=last 2 version!sass') }
+      { test: /\.json$/, loader: 'json-loader' },
+      { test: /\.scss$/, loader: ExtractTextPlugin.extract('style', 'css?modules&importLoaders=2&sourceMap!autoprefixer?browsers=last 2 version!sass?outputStyle=expanded&sourceMap=true&sourceMapContents=true') }
     ]
   },
   progress: true,
@@ -36,10 +39,16 @@ module.exports = {
     extensions: ['', '.json', '.js']
   },
   plugins: [
+    new CleanPlugin([relativeAssetsPath]),
 
     // css files from the extract-text-plugin loader
-    new ExtractTextPlugin('[name]-[chunkhash].css'),
-    new webpack.DefinePlugin({__CLIENT__: true, __SERVER__: false}),
+    new ExtractTextPlugin('[name]-[chunkhash].css', {allChunks: true}),
+    new webpack.DefinePlugin({
+      __CLIENT__: true,
+      __SERVER__: false,
+      __DEVELOPMENT__: false,
+      __DEVTOOLS__: false
+    }),
 
     // ignore dev config
     new webpack.IgnorePlugin(/\.\/dev/, /\/config$/),
@@ -47,14 +56,8 @@ module.exports = {
     // set global vars
     new webpack.DefinePlugin({
       'process.env': {
-
-        // Mainly used to require CSS files with webpack, which can happen only on browser
-        // Used as `if (process.env.BROWSER)...`
-        BROWSER: JSON.stringify(true),
-
         // Useful to reduce the size of client-side libraries, e.g. react
         NODE_ENV: JSON.stringify('production')
-
       }
     }),
 
@@ -68,7 +71,10 @@ module.exports = {
     }),
 
     // stats
-    function() { this.plugin('done', writeStats); }
-
+    function () {
+      this.plugin('done', function(stats) {
+        writeStats.call(this, stats, 'prod');
+      });
+    }
   ]
 };
