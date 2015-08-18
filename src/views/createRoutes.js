@@ -9,6 +9,7 @@ import RequireLogin from 'views/RequireLogin';
 import LoginSuccess from 'views/LoginSuccess';
 import Survey from 'views/Survey';
 import NotFound from 'views/NotFound';
+import Expensable_Home from 'views/expensable/Home';
 
 export default function(store) {
   return (
@@ -21,6 +22,7 @@ export default function(store) {
         <Route path="/loginSuccess" component={LoginSuccess}/>
       </Route>
       <Route path="/survey" component={Survey}/>
+      <Route path="/expensable" component={Expensable_Home}/>
       <Route path="*" component={NotFound}/>
     </Route>
   );
